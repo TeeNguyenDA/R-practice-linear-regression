@@ -1,0 +1,244 @@
+---
+title: 'R-practice-linear-regression'
+---
+
+## Question 1
+
+a) First and second midterm grades of some students are given as c(85,76,78,88,90,95,42,31) and c(55,66,48,58,80,75,32,22). Set R variables `first` and `second` respectively. Then find the least-squares line relating the second midterm to the first midterm. 
+
+   Does the assumption of a linear relationship appear to be reasonable in this case? Give reasons to your answer as a comment.
+```{r}
+# Set R variables `first` and `second`
+first <- c(85,76,78,88,90,95,42,31)
+first
+second <- c(55,66,48,58,80,75,32,22)
+second
+
+# Then check the correlation between `first` and `second`
+# There seems to be a strong correlation between the two variables
+cor(first, second)
+
+# Perform the least square regression using lm ()
+mlmodel <- lm(second ~ first)
+summary(mlmodel)
+
+# Use abline() to show the simple linear model created
+plot(first, second)
+abline(mlmodel)
+
+# Does the assumption of a linear relationship appear to be reasonable in this case?
+
+# The R-squared is 0.8222, and the Adjusted R-squared is 0.7926
+# The model seems to fit the data relatively well by this aspect.
+
+# The p-value here is small at 0.00189
+# It's much less than the significance level (usually 0.05)
+# The model fits the data well
+
+# Let's plot the residuals if they look random
+plot(mlmodel$residuals, pch = 16, col = "red")
+
+# The plot shows pretty random residuals, which is good
+
+# A linear relationship is reasonable in this case.
+
+```
+
+b) Plot the second midterm as a function of the first midterm using a scatterplot and graph the least-square line on the same plot. 
+```{r}
+# Plot the second midterm as a function of the first midterm in a scatterplot
+# Add the least-square regression line
+plot(first, second,
+     pch = 16,
+     col = "steelblue",
+     xlab = "First Midterm Marks",
+     ylab = "Second Midterm Marks",
+     main = "First Midterm vs Second Midterm Marks")
+
+abline(mlmodel)
+
+```
+
+c) Use the regression line to predict the second midterm grade when the first midterm grade is 88. 
+```{r}
+# Using the result of the `mlmodel` linear model before
+summary(mlmodel)
+
+# It tells us the least square estimated from the fitting model
+# Y-intercept = -1.8780, slope = 0.7710 with x=88
+p_second = -1.8780 + 0.7710 * 88
+p_second
+
+```
+
+
+
+## Question 2
+]
+This question makes use of package "plm". Please load Crime dataset as follows:
+```{r load_packages}
+# or install.packages("plm")
+library(plm) 
+data(Crime)
+
+```
+
+a) Display the first 10 rows of 'crime' data and display the names of all the variables, then display a descriptive summary of each variable. 
+```{r}
+# Display the first 10 rows of 'Crime' data
+head(Crime, 10)
+
+# Display the names of all the variables of 'Crime' data
+attributes(Crime)$names
+# Or use str()
+str(Crime)
+
+# Display a descriptive summary of each variable of 'Crime' data
+summary(Crime)
+
+```
+
+b) Calculate the mean, variance and standard deviation of tax revenue per capita (taxpc) by omitting the missing values, if any. 
+```{r}
+# Omit the missing values in `taxpc`
+Crime$taxpc <- na.omit(Crime$taxpc)
+
+# Calculate the mean, variance, standard deviation of taxpc, na.rm=T
+mean_taxpc <- mean(Crime$taxpc, na.rm=T)
+mean_taxpc
+
+var_taxpc <- var(Crime$taxpc, na.rm=T)
+var_taxpc
+
+sd_taxpc <- sd(Crime$taxpc, na.rm=T)
+sd_taxpc
+
+```
+c) Use `ldensity` (log-density) and `smsa` variables to build a linear regression model to predict tax per capita (taxpc).  And, compare with another linear regression model that uses `density` (density) and `smsa`.
+
+   How can you draw a conclusion from the results? 
+
+```{r}
+# Build `firstTxmodel` using `ldensity`,`smsa`to predict taxpc
+# It's a multiple linear regression model 
+# We want a model like this: taxpc = b0 + b1*ldensity + b2*smsa
+firstTxmodel <- lm(taxpc ~ ldensity + smsa, data = Crime)
+summary(firstTxmodel)
+
+# Build `secondTxmodel` using `density`,`smsa`to predict taxpc
+# It's a multiple linear regression model 
+# We want a model like this: taxpc = b0 + b1*density + b2*smsa
+secondTxmodel <- lm(taxpc ~ density + smsa, data = Crime)
+summary(secondTxmodel)
+
+# Compare the results of the two models & accuracy of the predictors:
+
+# p-value:
+# For `firstTxmodel`: p-value of Intercept, ldensity, smsa are really small
+# That's a good sign, as they're all lower than the significant p-value(0.05)
+# For `secondTxmodel`: p-value of Intercept, smsa are really small
+# However, p-value of density is greater than the significant p-value(0.05)
+# There's 66% chance the predictor `Density` is not meaningful for the regression
+# `ldensity` is more meaningful as a predictor for `taxpc`
+
+# R-squared and Adjusted R-squared:
+# R-squared tends to increase when more variables are added to the model
+# For that reason, we use the Adjusted R-squared in this case
+# For `firstTxmodel`: Adjusted R-squared is 0.08578
+# For `secondTxmodel`: Adjusted R-squared is 0.06305
+# Both models have alertly low Adjusted R-squared
+# If we have to pick, `firstTxmodel` might do a better work at predicting `taxpc`
+
+# Residual Standard Error (RSE) or sigma:
+# The lower the sigma the better, there will be less error of the prediction.
+# For `firstTxmodel`: RSE is 10.95
+# For `secondTxmodel`: RSE is 11.09
+# There's less error of prediction in `firstTxmodel` compared to `secondTxmodel`
+
+# Overall, the `firstTxmodel` linear regression model with `ldensity` fits better with our data.
+# The Adjusted R-squared of both models are quite low, at max 0.08578 for `firstTxmodel`
+# It means only 8.58% of the observed variation can be explained by the `firstTxmodel` model's inputs.
+
+```
+
+d) Based on the output of your model, write the equations using the intercept and factors of `smsa` when `density` is set to 2.4. and compare the result with `predict()` function.
+
+```{r}
+# Check the encoding of the categorical variable `smsa`
+contrasts(Crime$smsa)
+
+# Use the `secondTxmodel` with density=2.4 to find the predicted `taxpc`
+# Recall: Y-intercept=29.5615, slope(density)=-0.2345, slope(smsayes)=11.2808
+# taxpc = b0 + b1*density + b2*smsa, when smsa="yes"
+p_taxpc_yes = 29.5615 + (-0.2345)*2.4 + 11.2808*1
+p_taxpc_yes
+
+# Try also when smsa="no"
+p_taxpc_no = 29.5615 + (-0.2345)*2.4 + 11.2808*0
+p_taxpc_no
+
+# Compare the result with predict()
+predp_taxpc_yes <- predict(secondTxmodel, list(density=2.4, smsa="yes"))
+predp_taxpc_yes
+
+# Try also predict() when smsa="no"
+predp_taxpc_no <- predict(secondTxmodel, list(density=2.4, smsa="no"))
+predp_taxpc_no
+
+# The results using two methods are really close.
+
+```
+e) Find Pearson correlation between `density` and tax per capita `taxpc`; and also Pearson correlation between density and police per capita `polpc`. 
+
+   What conclusions can you draw? Write your reasons as comments.
+```{r}
+# Find Pearson correlation between `density` and `taxpc`
+# use = "complete.obs" to discard the entire row if an NA is present
+cor(Crime$density, Crime$taxpc, method = "pearson", use = "complete.obs")
+
+# Find Pearson correlation between `density` and `polpc`
+# use = "complete.obs" to discard the entire row if an NA is present
+cor(Crime$density, Crime$polpc, method = "pearson", use = "complete.obs")
+
+# Conclusion:
+## The pearson correlation coefficient between `density` and `taxpc` is 0.1997634
+## It shows a weak positive linear correlation between `density` and `taxpc`
+## When the people per square mile increase, the tax per person increases as well and vice versa.
+
+## The pearson correlation coefficient between `density` and `polpc` is -0.03969574
+## It shows a really weak negative linear correlation between `density` and `polpc`
+## When the people per square mile increase, the number police per person decreases.
+
+```
+
+f) Display the correlation matrix of the variables: avgsen, polpc, density, taxpc. 
+
+   Write what conclusion you can draw, as comments.
+```{r}
+# Load the corrplot package and attach the Crime dataset
+library(corrplot)
+attach(Crime)
+
+# Create a new data frame for variables: `avgsen`, `polpc`, `density`, `taxpc`
+df = data.frame(Crime$avgsen, Crime$polpc, Crime$density, Crime$taxpc)
+
+# Find the correlation of df and make a corrplot, use = "complete.obs"
+cor_df = cor(df, use = "complete.obs")
+corrplot(cor_df, method = 'number')
+
+# Conclusion from correlation matrix:
+
+## Weak linear correlations between `avgsen`, `polpc`, `density`, `taxpc`
+## The colors are really light, and almost invisible between the pairs:
+### `avgsen` vs `polpc`, `avgsen` vs `taxpc` (positive, very weak linear relationship)
+
+## Somewhat stronger, positive linear relationship between those pairs:
+### `density` vs `taxpc`, `polpc` vs `taxpc`, `avgsen` vs `density`
+
+## Very weak (almost zero), negative linear correlation between:
+### `density` vs `polpc`
+
+## Overall, an increase in each of those variables comes with a small increase in the rest with one exception.
+## An increase in the number of people per square correlates with a very, very small drop in the number of police per person.
+
+```
